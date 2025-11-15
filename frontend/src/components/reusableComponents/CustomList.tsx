@@ -9,7 +9,9 @@ import {
   ListItem,
   Spinner,
 } from "@chakra-ui/react";
+import type { UseQueryResult } from "@tanstack/react-query";
 
+import type { Response } from "../../services/api-client";
 import getCroppedImageUrl from "../../services/image-url";
 
 interface Item {
@@ -19,14 +21,10 @@ interface Item {
 }
 
 interface Props<T> {
-  onSelectItem: (item: T | null) => void;
-  selectedItem: T | null;
+  onSelectItem: (item?: T) => void;
+  selectedItem?: T;
   title: string;
-  useDataHook: () => {
-    data: T[];
-    error: string;
-    isLoading: boolean;
-  };
+  useDataHook: () => UseQueryResult<Response<T>, Error>;
 }
 
 const CustomList = <T extends Item>({
@@ -38,11 +36,13 @@ const CustomList = <T extends Item>({
   const [isExpanded, setIsExpanded] = useState(false);
   const COLLAPSED_GENRE_COUNT = 5;
 
-  const { data: items, error, isLoading } = useDataHook();
+  const { data, error, isLoading } = useDataHook();
 
-const displayedItems = isExpanded
-  ? items ?? []
-  : (items ?? []).slice(0, COLLAPSED_GENRE_COUNT);
+  const items = data?.results;
+
+  const displayedItems = isExpanded
+    ? items
+    : items?.slice(0, COLLAPSED_GENRE_COUNT);
 
   if (error) return null;
 
@@ -50,13 +50,13 @@ const displayedItems = isExpanded
 
   return (
     <>
-      <Button variant="link" onClick={() => onSelectItem(null)}>
+      <Button variant="link" onClick={() => onSelectItem(undefined)}>
         <Heading fontSize="2xl" marginBottom={3}>
           {title}
         </Heading>
       </Button>
       <List>
-        {displayedItems.map((item) => (
+        {displayedItems?.map((item) => (
           <ListItem key={item.id} padding="5px">
             <HStack>
               <Image
